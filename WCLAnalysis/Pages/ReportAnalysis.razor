@@ -131,14 +131,37 @@ else if (_fightShow == 3)
                                 <TableHeaderCell>模板选手平均每分钟的释放数量</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
-                        <TableRow>
-                            <TableRowCell>Mark</TableRowCell>
-                            <TableRowCell>Mark</TableRowCell>
-                            <TableRowCell>Otto</TableRowCell>
-                            <TableRowCell>@@mdo</TableRowCell>
-                            <TableRowCell>Mark</TableRowCell>
-                        </TableRow>
-                    </Table>
+                        @foreach (var p in _indexCast)
+                        {
+                    <TableRow>
+                        <TableRowCell>@p</TableRowCell>
+
+                        @if (_casts.ContainsKey(p))
+                            {
+                                var avgRole = Math.Round(_casts[p] / _durationRole * 60);
+                                var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
+                                string showTip;
+                                switch (avgModel-avgRole)
+                                {
+                                    case > 2:
+                                        showTip = "需要多用";
+                                        break;
+                                    case < -2:showTip
+
+                                }
+                            <TableRowCell>@_casts[p]</TableRowCell>
+                            <TableRowCell>@_castsModel[p]</TableRowCell>
+                            <TableRowCell>@avgRole</TableRowCell>
+                            <TableRowCell>@avgModel</TableRowCell>
+                              }
+                            else
+                            {
+                            <TableRowCell>0</TableRowCell>
+                            <TableRowCell>0</TableRowCell>
+                            }
+                    </TableRow>
+                        }
+                                        </Table>
                 }
             </TabPanel>
             <TabPanel Name="mainSkillTimeLine">
@@ -146,144 +169,147 @@ else if (_fightShow == 3)
                 {
                     <div class="spinner"></div>
                 }
-                @if (_analysisShow == 1)
-                {
+                            @if (_analysisShow == 1)
+                            {
 
-                }
+                            }
             </TabPanel>
         </Content>
     </Tabs>
 }
 else if (_fightShow == 4)
-{
+                        {
     <div class="spinner"></div>
 }
 
 @code {
     public string InputReportId { get; set; }
-    public Dictionary<string, string> ReportJsonDic = new();
-    //分别表示 战斗日志编码  某场战斗id  该战斗的json字符
-    public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();
-    List<Report> _reports = new();
-    List<Friendly> _friendlies = new();
-    Friendly _curFriendly;
-    int _curFightId;
-    //analysis
-    int _sameTalentCovenant;
-    Dictionary<string, int> _casts = new();
-    Dictionary<string, int> _castsModel = new();
+                        public Dictionary<string, string> ReportJsonDic = new();
+                        //分别表示 战斗日志编码  某场战斗id  该战斗的json字符
+                        public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();
+                        List<Report> _reports = new();
+                        List<Friendly> _friendlies = new();
+                        Friendly _curFriendly;
+                        int _curFightId;
+                        //analysis
+                        int _sameTalentCovenant;
+                        List<string> _indexCast = new();
+                        double _durationRole;
+                        double _durationModel;
+                        Dictionary<string, int> _casts = new();
+                        Dictionary<string, int> _castsModel = new();
 
 
-    //页面转换
-    private int _fightShow;
-    private int _analysisShow;
-    //Tab操作
-    string _selectedTab = "basic";
-    bool isShowCastAnalysis = false;
-    readonly Dictionary<string, string> _cssTypeStyle = new();
+                        //页面转换
+                        private int _fightShow;
+                        private int _analysisShow;
+                        //Tab操作
+                        string _selectedTab = "basic";
+                        bool isShowCastAnalysis = false;
+                        readonly Dictionary<string, string> _cssTypeStyle = new();
 
-    protected override void OnInitialized()
-    {
-        InitialCssStyle();
-    }
-    private async void SearchReports()
-    {
-        //wait for get info from wcl and spin
-        _fightShow = 4;
-        //
-        StateHasChanged();
-        await Task.Delay(1);
-        string reportJson;
-        if (ReportJsonDic.ContainsKey(InputReportId))
-            reportJson = ReportJsonDic[InputReportId];
-        else
-        {
-            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
-            ReportJsonDic.Add(InputReportId, reportJson);
-        }
-        var parsedObject = JObject.Parse(reportJson);
-        var parsedJson = parsedObject["fights"]?.ToString();
-        _reports = JsonConvert.DeserializeObject<List<Report>>(parsedJson ?? string.Empty);
-        _reports = _reports.Where(p => p.Boss != 0).ToList();
-        foreach (var report in _reports)
-        {
-            // ReSharper disable once PossibleNullReferenceException
-            report.StartTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.StartTimeUnix);
-            // ReSharper disable once PossibleNullReferenceException
-            report.EndTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.EndTimeUnix);
-        }
-        //turn to fight page
-        _fightShow = 1;
-        StateHasChanged();
-    }
+                        protected override void OnInitialized()
+                        {
+                            InitialCssStyle();
+                        }
+                        private async void SearchReports()
+                        {
+                            //wait for get info from wcl and spin
+                            _fightShow = 4;
+                            //
+                            StateHasChanged();
+                            await Task.Delay(1);
+                            string reportJson;
+                            if (ReportJsonDic.ContainsKey(InputReportId))
+                                reportJson = ReportJsonDic[InputReportId];
+                            else
+                            {
+                                reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+                                ReportJsonDic.Add(InputReportId, reportJson);
+                            }
+                            var parsedObject = JObject.Parse(reportJson);
+                            var parsedJson = parsedObject["fights"]?.ToString();
+                            _reports = JsonConvert.DeserializeObject<List<Report>>(parsedJson ?? string.Empty);
+                            _reports = _reports.Where(p => p.Boss != 0).ToList();
+                            foreach (var report in _reports)
+                            {
+                                // ReSharper disable once PossibleNullReferenceException
+                                report.StartTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.StartTimeUnix);
+                                // ReSharper disable once PossibleNullReferenceException
+                                report.EndTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.EndTimeUnix);
+                            }
+                            //turn to fight page
+                            _fightShow = 1;
+                            StateHasChanged();
+                        }
 
-    private async void AnalysisReports(int fightId)
-    {
-        //wait for get info from wcl and spin
-        _fightShow = 4;
-        _curFightId = fightId;
-        //
-        StateHasChanged();
-        await Task.Delay(1);
-        string reportJson;
-        if (ReportJsonDic.ContainsKey(InputReportId))
-            reportJson = ReportJsonDic[InputReportId];
-        else
-        {
-            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
-            ReportJsonDic.Add(InputReportId, reportJson);
-        }
-        //deserialize to your class
-        var parsedObject = JObject.Parse(reportJson);
-        var friendlies = parsedObject["friendlies"]!.Select(friendly => new Friendly(friendly.ToString())).ToList();
-        friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
-        _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
+                        private async void AnalysisReports(int fightId)
+                        {
+                            //wait for get info from wcl and spin
+                            _fightShow = 4;
+                            _curFightId = fightId;
+                            //
+                            StateHasChanged();
+                            await Task.Delay(1);
+                            string reportJson;
+                            if (ReportJsonDic.ContainsKey(InputReportId))
+                                reportJson = ReportJsonDic[InputReportId];
+                            else
+                            {
+                                reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+                                ReportJsonDic.Add(InputReportId, reportJson);
+                            }
+                            //deserialize to your class
+                            var parsedObject = JObject.Parse(reportJson);
+                            var friendlies = parsedObject["friendlies"]!.Select(friendly => new Friendly(friendly.ToString())).ToList();
+                            friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
+                            _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
 
-        string fightJson;
-        if (!CharacterFightDic.ContainsKey(InputReportId) || !CharacterFightDic[InputReportId].ContainsKey(fightId))
-        {
-            //calculator thr itemLevel
-            fightJson = await ReportService.GetCharacterFightJsonStringByReportAsync(_reports, InputReportId, fightId);
-            if (!CharacterFightDic.ContainsKey(InputReportId))
-                CharacterFightDic.Add(InputReportId, new Dictionary<int, string> { { fightId, fightJson } });
-            else
-                CharacterFightDic[InputReportId].Add(fightId, fightJson);
-        }
-        else
-        {
-            fightJson = CharacterFightDic[InputReportId][fightId];
-        }
-        var parsedObjectItemLevel = JObject.Parse(fightJson);
-        // ReSharper disable once PossibleNullReferenceException
-        foreach (var p in parsedObjectItemLevel["events"])
-        {
-            if (p["type"]?.ToString() != "combatantinfo") continue;
-            var gearJson = p["gear"]?.ToString();
-            var talentJson = p["talents"]?.ToString();
-            var covenantIdJson = p["covenantID"]?.ToString();
-            var sourceId = p["sourceID"]?.ToObject<int>();
-            var gears = JsonConvert.DeserializeObject<List<Gear>>(gearJson ?? string.Empty);
-            var talents = JsonConvert.DeserializeObject<List<Talent>>(talentJson ?? string.Empty);
-            var covenantId = JsonConvert.DeserializeObject<int>(covenantIdJson ?? string.Empty);
-            _friendlies.Find(friendly => friendly.Id == sourceId).Gears = gears;
-            _friendlies.Find(friendly => friendly.Id == sourceId).Talents = talents;
-            _friendlies.Find(friendly => friendly.Id == sourceId).CovenantId = covenantId;
-            switch (covenantId)
-            {
-                case 1:
-                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "格里恩";
-                    break;
-                case 2:
-                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "温西尔";
-                    break;
-                case 3:
-                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "法夜";
-                    break;
-                case 4:
-                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "通灵";
-                    break;
-            }
-        }
+                            string fightJson;
+                            if (!CharacterFightDic.ContainsKey(InputReportId) || !CharacterFightDic[InputReportId].ContainsKey(fightId))
+                            {
+                                //calculator thr itemLevel
+                                fightJson = await ReportService.GetCharacterFightJsonStringByReportAsync(_reports, InputReportId, fightId);
+                                if (!CharacterFightDic.ContainsKey(InputReportId))
+                                    CharacterFightDic.Add(InputReportId, new Dictionary<int, string> { { fightId, fightJson } });
+                                else
+                                    CharacterFightDic[InputReportId].Add(fightId, fightJson);
+                            }
+                            else
+                            {
+                                fightJson = CharacterFightDic[InputReportId][fightId];
+                            }
+                            var parsedObjectItemLevel = JObject.Parse(fightJson);
+                            // ReSharper disable once PossibleNullReferenceException
+                            foreach (var p in parsedObjectItemLevel["events"])
+                            {
+                                if (p["type"]?.ToString() != "combatantinfo") continue;
+                                var gearJson = p["gear"]?.ToString();
+                                var talentJson = p["talents"]?.ToString();
+                                var covenantIdJson = p["covenantID"]?.ToString();
+                                var sourceId = p["sourceID"]?.ToObject<int>();
+                                var gears = JsonConvert.DeserializeObject<List<Gear>>(gearJson ?? string.Empty);
+                                var talents = JsonConvert.DeserializeObject<List<Talent>>(talentJson ?? string.Empty);
+                                var covenantId = JsonConvert.DeserializeObject<int>(covenantIdJson ?? string.Empty);
+                                _friendlies.Find(friendly => friendly.Id == sourceId).Gears = gears;
+                                _friendlies.Find(friendly => friendly.Id == sourceId).Talents = talents;
+                                _friendlies.Find(friendly => friendly.Id == sourceId).CovenantId = covenantId;
+                                switch (covenantId)
+                                {
+                                    case 1:
+                                        _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "格里恩";
+                                        break;
+                                    case 2:
+                                        _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "温西尔";
+                                        break;
+                                    case 3:
+                                        _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "法夜";
+                                        break;
+                                    case 4:
+                                        _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "通灵";
+                                        break;
+                                }
+                            }
 
         foreach (var friendly in _friendlies)
         {
@@ -343,9 +369,9 @@ else if (_fightShow == 4)
                 StateHasChanged();
                 var curFight = _reports.Find(p => p.Id == _curFightId);
                 _casts = await ReportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id);
-
-                (_sameTalentCovenant,_castsModel) =await ReportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
-                
+                _durationRole = (curFight.EndTimeUnix - curFight.StartTimeUnix) / 1000.0;
+                (_sameTalentCovenant, _castsModel, _durationModel) = await ReportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
+                _indexCast = _casts.Keys.ToList().Union(_castsModel.Keys.ToList()).ToList();
                 _analysisShow = 1;
                 StateHasChanged();
                 break;

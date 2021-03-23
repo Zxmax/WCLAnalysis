@@ -142,7 +142,7 @@ namespace WCLAnalysis.Service
             return sortedCast;
         }
 
-        public async Task<Tuple<int, Dictionary<string, int>>> GetSameTalentCovenant(int bossId, Friendly friendly)
+        public async Task<Tuple<int, Dictionary<string, int>,double>> GetSameTalentCovenant(int bossId, Friendly friendly)
         {
             var collectionBoss = _database.GetCollection<Boss>("wclBoss");
             var bossName = collectionBoss.Find(p => p.EncounterId == bossId).FirstOrDefault().EncounterName;
@@ -170,6 +170,8 @@ namespace WCLAnalysis.Service
                 }
             }
 
+            if (results.Count == 0)
+                return new Tuple<int, Dictionary<string, int>, double>(0, new Dictionary<string, int>(), 0d);
             var model = results.First();
             var reportJson = await GetReportJsonStringByReportIdAsync(model.ReportId);
             var parsedObject = JObject.Parse(reportJson);
@@ -187,8 +189,9 @@ namespace WCLAnalysis.Service
             friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
             var friend = friendlies.Find(p => p.Name == model.CharacterName);
             var fight = reports.Find(p => p.StartTimeUnix == model.Start);
+            
             var castsModel = await GetCastAsync(fight, model.ReportId, friend.Id);
-            return new Tuple<int, Dictionary<string, int>>(results.Count, castsModel);
+            return new Tuple<int, Dictionary<string, int>,double>(results.Count, castsModel,model.Duration);
         }
 
         //class
