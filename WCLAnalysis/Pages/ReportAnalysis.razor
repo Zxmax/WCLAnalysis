@@ -1,0 +1,391 @@
+﻿@page "/reportAnalysis"
+@using WCLAnalysis.Service
+@using Newtonsoft.Json.Linq
+@using Newtonsoft.Json
+@using WCLAnalysis.Data
+@inject ReportService ReportService
+
+@if (_fightShow == 0)//首页输入战斗编号
+{
+    <div class="center-in-center form-inline">
+        <TextEdit @bind-Text="@InputReportId" Size="Size.Large" Placeholder="请输入日志的战斗编号"></TextEdit>
+        <p>&nbsp;</p>
+        <Button Outline="true" Size="Size.Large" Color="Color.Primary" @onclick="SearchReports"><b>Analysis ></b></Button>
+    </div>
+
+}
+else if (_fightShow == 1)//选择
+{
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <h4 style="margin-top: 2%">战斗列表</h4>
+    <div class="box">
+        @for (var i = 0; i <= _reports.Count / 5; i++)
+        {
+            var tempReport = _reports.Count >= i * 5 + 5 ? _reports.GetRange(i * 5, 5) : _reports.GetRange(i * 5, _reports.Count - i * 5);
+            @foreach (var report in tempReport)
+            {
+                if (report.Kill)
+                {
+                    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Success" WhiteText="true">
+                        <CardBody>
+                            <CardTitle Size="5">@report.Name</CardTitle>
+                            <CardText>
+                                开始时间: @report.StartTime
+                            </CardText>
+                            <CardText>
+                                结束时间 @report.EndTime
+                            </CardText>
+                            <CardText>
+                                是否击杀 @report.Kill
+                            </CardText>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
+                        </CardBody>
+                    </Card>
+                }
+                else
+                {
+                    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Info" WhiteText="true">
+                        <CardBody>
+                            <CardTitle Size="5">@report.Name</CardTitle>
+                            <CardText>
+                                开始时间: @report.StartTime
+                            </CardText>
+                            <CardText>
+                                结束时间 @report.EndTime
+                            </CardText>
+                            <CardText>
+                                是否击杀 @report.Kill
+                            </CardText>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
+                        </CardBody>
+                    </Card>
+                }
+            }
+        }
+    </div>
+}
+else if (_fightShow == 2)
+{
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <h4 style="margin-top: 2%">角色列表</h4>
+    <div class="box">
+        @for (var i = 0; i <= _friendlies.Count / 5; i++)
+        {
+            var tempReport = _friendlies.Count >= i * 5 + 5 ? _friendlies.GetRange(i * 5, 5) : _friendlies.GetRange(i * 5, _friendlies.Count - i * 5);
+            @foreach (var friendly in tempReport)
+            {
+                <Card class="child" Margin="Margin.Is4.FromBottom" Style="background-color: #1D1C1B" WhiteText="true">
+                    <CardBody>
+                        <CardTitle Size="5" Style=@_cssTypeStyle[friendly.Type]>@friendly.Name</CardTitle>
+                        <CardText Style="color:whitesmoke">
+                            装等: @friendly.ItemLevel
+                        </CardText>
+                        <Button Size="Size.Small" Style="color:whitesmoke" @onclick="() => AnalysisFriendly(friendly.Id)">角色详情 ></Button>
+                    </CardBody>
+                </Card>
+            }
+        }
+    </div>
+}
+else if (_fightShow == 3)
+{
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <Tabs Style="margin-top: 2%" SelectedTab="@_selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+        <Items>
+            <Tab Name="basic">基础信息</Tab>
+            <Tab Name="castAnalysis" Disabled=@isShowCastAnalysis>技能数占比分析</Tab>
+            <Tab Name="mainSkillTimeLine">爆发技能轴分析</Tab>
+        </Items>
+        <Content>
+            <TabPanel Name="basic">
+                <div class="center-in-center form-inline">
+                    <ul>
+                        <li class="characterInfo"><b>角色名：</b>@_curFriendly.Name</li>
+                        <li class="characterInfo"><b>装等：</b>@_curFriendly.ItemLevel</li>
+                        <li class="characterInfo"><b>天赋：</b>@_curFriendly.TalentNumber</li>
+                        <li class="characterInfo"><b>职业：</b>@_curFriendly.Type</li>
+                        <li class="characterInfo"><b>专精：</b>@_curFriendly.Spec</li>
+                        <li class="characterInfo"><b>盟约：</b>@_curFriendly.Covenant</li>
+                    </ul>
+                </div>
+            </TabPanel>
+            <TabPanel Name="castAnalysis">
+                @if (_analysisShow == 0)
+                {
+                    <div class="spinner"></div>
+                }
+                @if (_analysisShow == 1)
+                {
+                    <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
+
+                    <Table style="margin-top: 2%">
+                        <TableHeader ThemeContrast="ThemeContrast.Dark">
+                            <TableRow>
+                                <TableHeaderCell>技能名称</TableHeaderCell>
+                                <TableHeaderCell>你的释放数量</TableHeaderCell>
+                                <TableHeaderCell>平均每分钟的释放数量</TableHeaderCell>
+                                <TableHeaderCell>模板选手的释放数量</TableHeaderCell>
+                                <TableHeaderCell>模板选手平均每分钟的释放数量</TableHeaderCell>
+                            </TableRow>
+                        </TableHeader>
+                        <TableRow>
+                            <TableRowCell>Mark</TableRowCell>
+                            <TableRowCell>Mark</TableRowCell>
+                            <TableRowCell>Otto</TableRowCell>
+                            <TableRowCell>@@mdo</TableRowCell>
+                            <TableRowCell>Mark</TableRowCell>
+                        </TableRow>
+                    </Table>
+                }
+            </TabPanel>
+            <TabPanel Name="mainSkillTimeLine">
+                @if (_analysisShow == 0)
+                {
+                    <div class="spinner"></div>
+                }
+                @if (_analysisShow == 1)
+                {
+
+                }
+            </TabPanel>
+        </Content>
+    </Tabs>
+}
+else if (_fightShow == 4)
+{
+    <div class="spinner"></div>
+}
+
+@code {
+    public string InputReportId { get; set; }
+    public Dictionary<string, string> ReportJsonDic = new();
+    //分别表示 战斗日志编码  某场战斗id  该战斗的json字符
+    public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();
+    List<Report> _reports = new();
+    List<Friendly> _friendlies = new();
+    Friendly _curFriendly;
+    int _curFightId;
+    //analysis
+    int _sameTalentCovenant;
+    Dictionary<string, int> _casts = new();
+    Dictionary<string, int> _castsModel = new();
+
+
+    //页面转换
+    private int _fightShow;
+    private int _analysisShow;
+    //Tab操作
+    string _selectedTab = "basic";
+    bool isShowCastAnalysis = false;
+    readonly Dictionary<string, string> _cssTypeStyle = new();
+
+    protected override void OnInitialized()
+    {
+        InitialCssStyle();
+    }
+    private async void SearchReports()
+    {
+        //wait for get info from wcl and spin
+        _fightShow = 4;
+        //
+        StateHasChanged();
+        await Task.Delay(1);
+        string reportJson;
+        if (ReportJsonDic.ContainsKey(InputReportId))
+            reportJson = ReportJsonDic[InputReportId];
+        else
+        {
+            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            ReportJsonDic.Add(InputReportId, reportJson);
+        }
+        var parsedObject = JObject.Parse(reportJson);
+        var parsedJson = parsedObject["fights"]?.ToString();
+        _reports = JsonConvert.DeserializeObject<List<Report>>(parsedJson ?? string.Empty);
+        _reports = _reports.Where(p => p.Boss != 0).ToList();
+        foreach (var report in _reports)
+        {
+            // ReSharper disable once PossibleNullReferenceException
+            report.StartTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.StartTimeUnix);
+            // ReSharper disable once PossibleNullReferenceException
+            report.EndTime = UnixToDateTime(parsedObject["start"].ToObject<long>() + report.EndTimeUnix);
+        }
+        //turn to fight page
+        _fightShow = 1;
+        StateHasChanged();
+    }
+
+    private async void AnalysisReports(int fightId)
+    {
+        //wait for get info from wcl and spin
+        _fightShow = 4;
+        _curFightId = fightId;
+        //
+        StateHasChanged();
+        await Task.Delay(1);
+        string reportJson;
+        if (ReportJsonDic.ContainsKey(InputReportId))
+            reportJson = ReportJsonDic[InputReportId];
+        else
+        {
+            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            ReportJsonDic.Add(InputReportId, reportJson);
+        }
+        //deserialize to your class
+        var parsedObject = JObject.Parse(reportJson);
+        var friendlies = parsedObject["friendlies"]!.Select(friendly => new Friendly(friendly.ToString())).ToList();
+        friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
+        _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
+
+        string fightJson;
+        if (!CharacterFightDic.ContainsKey(InputReportId) || !CharacterFightDic[InputReportId].ContainsKey(fightId))
+        {
+            //calculator thr itemLevel
+            fightJson = await ReportService.GetCharacterFightJsonStringByReportAsync(_reports, InputReportId, fightId);
+            if (!CharacterFightDic.ContainsKey(InputReportId))
+                CharacterFightDic.Add(InputReportId, new Dictionary<int, string> { { fightId, fightJson } });
+            else
+                CharacterFightDic[InputReportId].Add(fightId, fightJson);
+        }
+        else
+        {
+            fightJson = CharacterFightDic[InputReportId][fightId];
+        }
+        var parsedObjectItemLevel = JObject.Parse(fightJson);
+        // ReSharper disable once PossibleNullReferenceException
+        foreach (var p in parsedObjectItemLevel["events"])
+        {
+            if (p["type"]?.ToString() != "combatantinfo") continue;
+            var gearJson = p["gear"]?.ToString();
+            var talentJson = p["talents"]?.ToString();
+            var covenantIdJson = p["covenantID"]?.ToString();
+            var sourceId = p["sourceID"]?.ToObject<int>();
+            var gears = JsonConvert.DeserializeObject<List<Gear>>(gearJson ?? string.Empty);
+            var talents = JsonConvert.DeserializeObject<List<Talent>>(talentJson ?? string.Empty);
+            var covenantId = JsonConvert.DeserializeObject<int>(covenantIdJson ?? string.Empty);
+            _friendlies.Find(friendly => friendly.Id == sourceId).Gears = gears;
+            _friendlies.Find(friendly => friendly.Id == sourceId).Talents = talents;
+            _friendlies.Find(friendly => friendly.Id == sourceId).CovenantId = covenantId;
+            switch (covenantId)
+            {
+                case 1:
+                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "格里恩";
+                    break;
+                case 2:
+                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "温西尔";
+                    break;
+                case 3:
+                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "法夜";
+                    break;
+                case 4:
+                    _friendlies.Find(friendly => friendly.Id == sourceId).Covenant = "通灵";
+                    break;
+            }
+        }
+
+        foreach (var friendly in _friendlies)
+        {
+            //计算装等
+            var itemLevelSum = 0d;
+            var itemNumber = 0;
+            foreach (var gear in friendly.Gears.Where(gear => gear.ItemLevel >= 168))
+            {
+                itemLevelSum += gear.ItemLevel;
+                itemNumber++;
+            }
+            friendly.ItemLevel = Math.Round(itemLevelSum / itemNumber, 2); //保留小数点后2位
+        }
+
+        //turn to fight page
+        _fightShow = 2;
+        StateHasChanged();
+    }
+
+    private async void AnalysisFriendly(int characterId)
+    {
+        //wait for get info from wcl and spin
+        _fightShow = 4;
+        //
+        StateHasChanged();
+        await Task.Delay(1);
+
+        _curFriendly = _friendlies.FirstOrDefault(p => p.Id == characterId);
+        if (_curFriendly != null)
+        {
+            var (spec, talentList) = ReportService.GetTalentByType(_curFriendly.Talents);
+            _curFriendly.Spec = spec;
+            _curFriendly.TalentNumber = talentList[0] + talentList[1] + talentList[2] + talentList[3] + talentList[4] + talentList[5] + talentList[6];
+        }
+
+        //turn to fight page
+        _fightShow = 3;
+        StateHasChanged();
+    }
+    private void ReturnBeforePage()
+    {
+        _fightShow--;
+    }
+
+
+
+    //method
+    private async void OnSelectedTabChanged(string name)
+    {
+        _selectedTab = name;
+        switch (name)
+        {
+            case "castAnalysis":
+                //wait for get info and spin
+                _analysisShow = 0;
+                //
+                StateHasChanged();
+                var curFight = _reports.Find(p => p.Id == _curFightId);
+                _casts = await ReportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id);
+
+                (_sameTalentCovenant,_castsModel) =await ReportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
+                
+                _analysisShow = 1;
+                StateHasChanged();
+                break;
+            case "mainSkillTimeLine":
+                //wait for get info and spin
+                _analysisShow = 0;
+                //
+                StateHasChanged();
+
+
+
+
+
+
+                _analysisShow = 1;
+                StateHasChanged();
+                break;
+        }
+    }
+    private DateTime UnixToDateTime(long unixTimeStamp)
+    {
+#pragma warning disable 618
+        var startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1)); // 当地时区
+#pragma warning restore 618
+        var dt = startTime.AddMilliseconds(unixTimeStamp);
+        return dt;
+    }
+    private void InitialCssStyle()
+    {
+        _cssTypeStyle.Add("Shaman", "color: #2459FF");
+        _cssTypeStyle.Add("Mage", "color: #5EBADF");
+        _cssTypeStyle.Add("Warlock", "color: #8578BC");
+        _cssTypeStyle.Add("DeathKnight", "color: #B01F3C");
+        _cssTypeStyle.Add("Druid", "color: #FF7D0A");
+        _cssTypeStyle.Add("Priest", "color: #E5E8EC");
+        _cssTypeStyle.Add("Monk", "color: #288E73");
+        _cssTypeStyle.Add("DemonHunter", "color: #922EBC");
+        _cssTypeStyle.Add("Paladin", "color: #E68CBA");
+        _cssTypeStyle.Add("Warrior", "color: #B38F6A");
+        _cssTypeStyle.Add("Rogue", "color: #E5DF65");
+        _cssTypeStyle.Add("Hunter", "color: #8EB667");
+    }
+}
