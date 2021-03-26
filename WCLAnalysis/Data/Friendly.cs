@@ -28,7 +28,12 @@ namespace WCLAnalysis.Data
             var jsonObject = JsonConvert.DeserializeObject<dynamic>(json);
             Id = jsonObject["id"];
             Name = (string)jsonObject["name"];
-            Type = (string)jsonObject["type"];
+            if ((string) jsonObject["type"] == "DeathKnight")
+                Type = "Death Knight";
+            else if ((string)jsonObject["type"] == "DemonHunter")
+                Type = "Demon Hunter";
+            else 
+                Type = (string)jsonObject["type"];
             foreach (var fight in jsonObject["fights"])
             {
                 int id = fight["id"];

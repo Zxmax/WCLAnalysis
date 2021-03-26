@@ -20,6 +20,8 @@ namespace WCLAnalysis.Data
         public string Name { get; set; }
         public DifficultyType Difficulty { get; set; }
         public bool Kill { get; set; }
+        [JsonProperty(PropertyName = "bossPercentage")]
+        public int BossPercentage { get; set; }
 
         public enum DifficultyType
         {

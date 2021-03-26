@@ -45,6 +45,9 @@ else if (_fightShow == 1)//选择
                 }
                 else
                 {
+                    var bossPercent = 100 - report.BossPercentage / 100;
+                    var actualPercent = Math.Round(100 - report.BossPercentage / 100.00, 2);
+                    var style = "";
                     <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Info" WhiteText="true">
                         <CardBody>
                             <CardTitle Size="5">@report.Name</CardTitle>
@@ -57,6 +60,20 @@ else if (_fightShow == 1)//选择
                             <CardText>
                                 是否击杀 @report.Kill
                             </CardText>
+                            <Progress style="background-color:#303030">
+                                @{
+                                    style = bossPercent switch
+                                    {
+                                        > 90 => "background-color:darkorange",
+                                        > 70 => "background-color:blueviolet",
+                                        > 50 => "background-color:blue",
+                                        > 20 => "background-color:green",
+                                        > 0 => "background-color: white",
+                                        _ => style
+                                    };
+                                }
+                                <ProgressBar size="" Style=@style Value=@bossPercent></ProgressBar>
+                            </Progress>
                             <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
                         </CardBody>
                     </Card>
@@ -120,7 +137,6 @@ else if (_fightShow == 3)
                 @if (_analysisShow == 1)
                 {
                     <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
-
                     <Table style="margin-top: 2%">
                         <TableHeader ThemeContrast="ThemeContrast.Dark">
                             <TableRow>
@@ -137,14 +153,16 @@ else if (_fightShow == 3)
                             <TableRow>
                                 <TableRowCell>@p</TableRowCell>
 
-                                @if (_casts.ContainsKey(p)&&_castsModel.ContainsKey(p))
+                                @if (_casts.ContainsKey(p) && _castsModel.ContainsKey(p))
                                 {
                                     var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
                                     var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
                                     var showTip = (avgModel - avgRole) switch
                                     {
                                         > 2 => "需要多用",
-                                        < -2 => "减少使用",
+                                        > 0.5 => "可以多用",
+                                        < -2 => "需要少用",
+                                        < -0.5 => "可以少用",
                                         _ => ""
                                     };
                                     <TableRowCell>@_casts[p]</TableRowCell>
@@ -153,25 +171,82 @@ else if (_fightShow == 3)
                                     <TableRowCell>@avgModel</TableRowCell>
                                     if (showTip == "")
                                     {
-                                        <TableRowCell Background="Background.Success">@showTip</TableRowCell>
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
                                     }
-                                    else
+                                    else if (showTip == "需要多用")
                                     {
-                                        <TableRowCell Background="Background.Danger">@showTip</TableRowCell>
+                                        <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:lightblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
+                                    }
+                                }
+                                else if (!_casts.ContainsKey(p))
+                                {
+                                    var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
+                                    var showTip = (avgModel - 0) switch
+                                    {
+                                        > 2 => "需要多用",
+                                        > 0.5 => "可以多用",
+                                        _ => ""
+                                    };
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@_castsModel[p]</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@avgModel</TableRowCell>
+                                    if (showTip == "")
+                                    {
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:dodgerblue">@showTip</TableRowCell>
                                     }
                                 }
                                 else
                                 {
-                                    var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
-                                    <TableRowCell></TableRowCell>
-                                    <TableRowCell>@_castsModel[p]</TableRowCell>
-                                    <TableRowCell></TableRowCell>
-                                    <TableRowCell>@avgModel</TableRowCell>
-                                    <TableRowCell></TableRowCell>
+                                    var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
+                                    var showTip = (0 - avgRole) switch
+                                    {
+                                        > 0 => "",
+                                        < -2 => "需要少用",
+                                        < -0.5 => "可以少用",
+                                        _ => ""
+                                    };
+                                    <TableRowCell>@_casts[p]</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@avgRole</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    if (showTip == "")
+                                    {
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
+                                    }
                                 }
                             </TableRow>
                         }
                     </Table>
+
                 }
             </TabPanel>
             <TabPanel Name="mainSkillTimeLine">
@@ -343,6 +418,7 @@ else if (_fightShow == 4)
     {
         //wait for get info from wcl and spin
         _fightShow = 4;
+        _selectedTab = "basic";
         //
         StateHasChanged();
         await Task.Delay(1);
@@ -414,11 +490,11 @@ else if (_fightShow == 4)
         _cssTypeStyle.Add("Shaman", "color: #2459FF");
         _cssTypeStyle.Add("Mage", "color: #5EBADF");
         _cssTypeStyle.Add("Warlock", "color: #8578BC");
-        _cssTypeStyle.Add("DeathKnight", "color: #B01F3C");
+        _cssTypeStyle.Add("Death Knight", "color: #B01F3C");
         _cssTypeStyle.Add("Druid", "color: #FF7D0A");
         _cssTypeStyle.Add("Priest", "color: #E5E8EC");
         _cssTypeStyle.Add("Monk", "color: #288E73");
-        _cssTypeStyle.Add("DemonHunter", "color: #922EBC");
+        _cssTypeStyle.Add("Demon Hunter", "color: #922EBC");
         _cssTypeStyle.Add("Paladin", "color: #E68CBA");
         _cssTypeStyle.Add("Warrior", "color: #B38F6A");
         _cssTypeStyle.Add("Rogue", "color: #E5DF65");
