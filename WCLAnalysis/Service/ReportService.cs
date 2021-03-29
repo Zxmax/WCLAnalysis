@@ -16,7 +16,7 @@ namespace WCLAnalysis.Service
     public class ReportService
     {
         private const string Url = "https://cn.warcraftlogs.com:443/v1/";
-        private string _urlParameters = "?api_key=" + Key;
+        private const string UrlParameters = "?api_key=" + Key;
         private const string Key = "2b1f831583857b7f53019586915226cf";
         private static readonly MongoClient Client = new MongoClient("mongodb://localhost:27017");
         private readonly IMongoDatabase _database = Client.GetDatabase("WOW");
@@ -32,7 +32,7 @@ namespace WCLAnalysis.Service
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
             // List data response.
-            var response = await client.GetAsync(_urlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
+            var response = await client.GetAsync(UrlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
             // Parse the response body.
             if (response.IsSuccessStatusCode)
             {
@@ -59,11 +59,11 @@ namespace WCLAnalysis.Service
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _urlParameters = _urlParameters +
-                             "&start=" + startTime + "&end=" + endTime + "&translate=true";
+            var urlParameters = UrlParameters +
+                             "&start=" + startTime + "&end=" + endTime;
 
             // List data response.
-            var response = await client.GetAsync(_urlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
+            var response = await client.GetAsync(urlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
             // Parse the response body.
             if (response.IsSuccessStatusCode)
             {
@@ -94,7 +94,7 @@ namespace WCLAnalysis.Service
             return tuple;
         }
 
-        public async Task<Dictionary<string, int>> GetCastAsync(Report report, string reportId, int friendlyId)
+        public async Task<Dictionary<string, int>> GetCastAsync(Report report, string reportId, int friendlyId,bool isTrans)
         {
             var startTime = report.StartTimeUnix;
             var endTime = report.EndTimeUnix;
@@ -107,11 +107,21 @@ namespace WCLAnalysis.Service
             // Add an Accept header for JSON format.
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
+            string urlParameters;
+            if (isTrans)
+            {
+                urlParameters = UrlParameters +
+                                "&start=" + startTime + "&end=" + endTime + "&sourceid=" + friendlyId +
+                                "&translate=true";
+            }
+            else
+            {
+                urlParameters = UrlParameters +
+                                "&start=" + startTime + "&end=" + endTime + "&sourceid=" + friendlyId;
+            }
 
-            _urlParameters = _urlParameters +
-                            "&start=" + startTime + "&end=" + endTime + "&sourceid=" + friendlyId;
             // List data response.
-            var response = await client.GetAsync(_urlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
+            var response = await client.GetAsync(urlParameters);  // Blocking call! Program will wait here until a response is received or a timeout occurs.
             var dpsHpsCast = new Dictionary<string, int>();
             var sortedCast = new Dictionary<string, int>();
             if (response.IsSuccessStatusCode)
@@ -190,7 +200,7 @@ namespace WCLAnalysis.Service
             var friend = friendlies.Find(p => p.Name == model.CharacterName);
             var fight = reports.Find(p => p.StartTimeUnix == model.Start);
             
-            var castsModel = await GetCastAsync(fight, model.ReportId, friend.Id);
+            var castsModel = await GetCastAsync(fight, model.ReportId, friend.Id,true);
             return new Tuple<int, Dictionary<string, int>,double>(results.Count, castsModel,model.Duration);
         }
 
