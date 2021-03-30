@@ -1,8 +1,10 @@
 Made with Blazor
 
-online mode: http://120.26.47.184:5000/
+[online mode]( http://120.26.47.184:5000/)
 
 分析魔兽世界团本log(限9.0纳兹瑞亚堡)具体内容如下：
+
+**注：当前使用的是2021年3月初的9.05的wcl前100 数据。**
 
 战斗列表
 <img width="1052" alt="战斗" src="https://user-images.githubusercontent.com/17643775/112939447-0f06f680-915e-11eb-83f5-107f4f23a3ad.png">
