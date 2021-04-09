@@ -507,13 +507,10 @@ namespace WCLAnalysis.Service
                     case <= 0:
                         continue;
                     case 1:
-                        if(cast.Name=="复仇之怒")
-                            if (spec == "holy")
-                            {
-                                type = 2;
-                                break;
-                            }
-                        type = results[0].Type;
+                        if (spec == "restoration" || spec == "mistweaver" || spec == "holy" || spec == "discipline")
+                            type = 2;
+                        else
+                            type = 1;
                         break;
                     case > 1:
                         var temp = results.Find(p => p.Spec == spec);
@@ -592,8 +589,8 @@ namespace WCLAnalysis.Service
             public string CnName { get; set; }
             [BsonElement("Class")]
             public string Class { get; set; }
-            [BsonElement("SpellId")]
-            public string SpellId { get; set; }
+            [BsonElement("CovenantId")]
+            public string CovenantId { get; set; }
             [BsonElement("Type")]
             public int Type { get; set; }
             [BsonElement("Spec")]
