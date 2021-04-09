@@ -3,7 +3,7 @@
 @using Newtonsoft.Json.Linq
 @using Newtonsoft.Json
 @using WCLAnalysis.Data
-@inject ReportService ReportService
+@inject ReportService _reportService
 
 @if (_fightShow == 0)//首页输入战斗编号
 {
@@ -74,8 +74,8 @@ else if (_fightShow == 1)//选择
                                 }
                                 <ProgressBar size="" Style=@style Value=@bossPercent></ProgressBar>
                             </Progress>
-                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
-                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)"><b>战斗技能分配 ></b></Button>
+                            <Button Color="Color.Link" @onclick="() => AnalysisReports(report.Id)" Outline="true" Size="Size.Small"><b>战斗详情 ></b></Button>
+                            <Button Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)" Outline="true" Size="Size.Small"><b>战斗技能分配 ></b></Button>
                         </CardBody>
                     </Card>
                 }
@@ -114,9 +114,8 @@ else if (_fightShow == 3)
     <Tabs Style="margin-top: 2%" SelectedTab="@_selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
         <Items>
             <Tab Name="basic">基础信息</Tab>
-            <Tab Name="castAnalysis" Disabled=@isShowCastAnalysis>技能数占比分析</Tab>
+            <Tab Name="castAnalysis" Disabled=@IsShowCastAnalysis>技能数占比分析</Tab>
             <Tab Name="mainSkillTimeLine">爆发技能轴分析</Tab>
-            <Tab Name="eruptTimeLine">爆发时间</Tab>
         </Items>
         <Content>
             <TabPanel Name="basic">
@@ -281,20 +280,6 @@ else if (_fightShow == 3)
 
                 }
             </TabPanel>
-            <TabPanel Name="eruptTimeLine">
-                @if (_analysisShow == 0)
-                {
-                    <div class="spinner"></div>
-                }
-                @if (_analysisShow == 1)
-                {
-
-                }
-                @if (_analysisShow == 2)
-                {
-
-                }
-            </TabPanel>
         </Content>
     </Tabs>
 }
@@ -305,9 +290,9 @@ else if (_fightShow == 4)
 else if (_fightShow == 5)
 {
     <Progress style="margin-top: 2%">
-        <ProgressBar Value=@process />
+        <ProgressBar Value=@_process />
     </Progress>
-    <p>@process</p>
+    <p>@_process</p>
 }
 else if (_fightShow == 6)
 {
@@ -348,51 +333,60 @@ else if (_fightShow == 6)
 }
 
 @code {
-    public string InputReportId { get; set; }
-    public Dictionary<string, string> ReportJsonDic = new();
-    //分别表示 战斗日志编码  某场战斗id  该战斗的json字符
-    public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();
-    List<Report> _reports = new();
-    List<Friendly> _friendlies = new();
-    Friendly _curFriendly;
-    int _curFightId;
-    //analysis
-    int _sameTalentCovenant;
-    List<string> _indexCast = new();
-    double _durationRole;
-    double _durationModel;
-    Dictionary<string, int> _casts = new();
-    Dictionary<string, int> _castsModel = new();
-    List<Cast> _castList = new();
-    List<Cast> _castListTemp = new();
-    List<DamageDone> _damage = new();
-    List<Heal> _heal = new();
-    List<DamageDone> _damageModel = new();
-    List<Heal> _healModel = new();
-    List<DamageDone> _damageEruptModel = new();
-    List<Heal> _healEruptModel = new();
-    Dictionary<string, DamageClass> _damageSum = new();
-    Dictionary<string, HealClass> _healSum = new();
-    Dictionary<string, DamageClass> _damageSumModel = new();
-    Dictionary<string, HealClass> _healSumModel = new();
+
+    #region 变量
+
+    //通用
+    public string InputReportId { get; set; }//报告ID
+    public Dictionary<string, string> ReportJsonDic = new();//报告ID对应的json字符串
+    public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();//分别表示 战斗日志编码  某场战斗id  该战斗的json字符
+    List<Report> _reports = new();//当前报告ID下的所有战斗
+    List<Friendly> _friendlies = new();//当前战斗中参与的友方玩家
+    Friendly _curFriendly;//当前选中的玩家
+    int _curFightId;//当前战斗ID
+
+    //施法分析
+    int _sameTalentCovenant;//wcl前100与当前玩家天赋盟约相同的数量
+    List<string> _indexCast = new();//当前玩家施法的所有index，供做表用
+    double _durationRole;//当前玩家当前战斗的用时
+    double _durationModel;//当前玩家当前战斗的模板玩家的战斗用时
+    Dictionary<string, int> _casts = new();//当前玩家当前战斗的施法数量字典
+    Dictionary<string, int> _castsModel = new();//当前玩家当前战斗的模板玩家的施法数量字典
+
+    //团队爆发技能分析
+    List<Cast> _eruptListTemp = new();//当前玩家的爆发技能列表
     List<EruptTimeLine> _dicErupt = new();
     List<EruptTimeLine> _eruptList = new();
-    int process = 0;
+
+    //爆发技能抽分析
+
+    //页面转换以及进度条等数据绑定
+    private int _fightShow;//不同功能页面之间的切换
+    private int _analysisShow;//分析某个角色的不同功能之间的切换
+    int _process;//分析进度条绑定值
+    readonly Dictionary<string, string> _cssTypeStyle = new();//cssSty
+    string _selectedTab = "basic";//绑定某角色下所选的是什么功能
+    private const bool IsShowCastAnalysis = false;//是否显示技能占比
+
+    #endregion
+
+    #region 功能method
 
 
 
-    //页面转换
-    private int _fightShow;
-    private int _analysisShow;
-    //Tab操作
-    string _selectedTab = "basic";
-    bool isShowCastAnalysis = false;
-    readonly Dictionary<string, string> _cssTypeStyle = new();
+    #endregion
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
     protected override void OnInitialized()
     {
+        //初始化cssStyle
         InitialCssStyle();
     }
+    /// <summary>
+    /// 根据报告ID查找报告的json字符串
+    /// </summary>
     private async void SearchReports()
     {
         //wait for get info from wcl and spin
@@ -405,7 +399,7 @@ else if (_fightShow == 6)
             reportJson = ReportJsonDic[InputReportId];
         else
         {
-            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            reportJson = await _reportService.GetReportJsonStringByReportIdAsync(InputReportId);
             ReportJsonDic.Add(InputReportId, reportJson);
         }
         var parsedObject = JObject.Parse(reportJson);
@@ -423,7 +417,11 @@ else if (_fightShow == 6)
         _fightShow = 1;
         StateHasChanged();
     }
-
+    /// <summary>
+    /// 根据战斗ID获取战斗的json字符串
+    /// 并且获取当前战斗的玩家列表
+    /// </summary>
+    /// <param name="fightId"></param>
     private async void AnalysisReports(int fightId)
     {
         //wait for get info from wcl and spin
@@ -437,7 +435,7 @@ else if (_fightShow == 6)
             reportJson = ReportJsonDic[InputReportId];
         else
         {
-            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            reportJson = await _reportService.GetReportJsonStringByReportIdAsync(InputReportId);
             ReportJsonDic.Add(InputReportId, reportJson);
         }
         //deserialize to your class
@@ -450,7 +448,7 @@ else if (_fightShow == 6)
         if (!CharacterFightDic.ContainsKey(InputReportId) || !CharacterFightDic[InputReportId].ContainsKey(fightId))
         {
             //calculator thr itemLevel
-            fightJson = await ReportService.GetCharacterFightJsonStringByReportAsync(_reports, InputReportId, fightId);
+            fightJson = await _reportService.GetCharacterFightJsonStringByReportAsync(_reports, InputReportId, fightId);
             if (!CharacterFightDic.ContainsKey(InputReportId))
                 CharacterFightDic.Add(InputReportId, new Dictionary<int, string> { { fightId, fightJson } });
             else
@@ -509,10 +507,14 @@ else if (_fightShow == 6)
         _fightShow = 2;
         StateHasChanged();
     }
+    /// <summary>
+    /// 分析当前战斗的团队技能分配情况
+    /// </summary>
+    /// <param name="fightId"></param>
     private async void AnalysisReportsErupt(int fightId)
     {
         //wait for get info from wcl and spin
-        process = 0;
+        _process = 0;
         _fightShow = 5;
         _curFightId = fightId;
         //
@@ -523,7 +525,7 @@ else if (_fightShow == 6)
             reportJson = ReportJsonDic[InputReportId];
         else
         {
-            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            reportJson = await _reportService.GetReportJsonStringByReportIdAsync(InputReportId);
             ReportJsonDic.Add(InputReportId, reportJson);
         }
         //deserialize to your class
@@ -533,10 +535,10 @@ else if (_fightShow == 6)
         _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
         foreach (var friendly in _friendlies)
         {
-            _castListTemp = await ReportService.GetCastList(_reports, InputReportId, _curFightId, friendly);
-            _dicErupt = await ReportService.GetErupt(_castListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix);
+            _eruptListTemp = await _reportService.GetEruptList(_reports, InputReportId, _curFightId, friendly);
+            _dicErupt = await _reportService.GetErupt(_eruptListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix);
             _eruptList.AddRange(_dicErupt);
-            process += 5;
+            _process += 5;
             StateHasChanged();
         }
         _eruptList = _eruptList.OrderBy(p => p.Time).ToList();
@@ -545,6 +547,10 @@ else if (_fightShow == 6)
         _fightShow = 6;
         StateHasChanged();
     }
+    /// <summary>
+    /// 分析当前战斗当前玩家的情况
+    /// </summary>
+    /// <param name="characterId"></param>
     private async void AnalysisFriendly(int characterId)
     {
         //wait for get info from wcl and spin
@@ -557,7 +563,7 @@ else if (_fightShow == 6)
         _curFriendly = _friendlies.FirstOrDefault(p => p.Id == characterId);
         if (_curFriendly != null)
         {
-            var (spec, talentList) = ReportService.GetTalentByType(_curFriendly.Talents);
+            var (spec, talentList) = _reportService.GetTalentByType(_curFriendly.Talents);
             _curFriendly.Spec = spec;
             _curFriendly.TalentNumber = talentList[0] + talentList[1] + talentList[2] + talentList[3] + talentList[4] + talentList[5] + talentList[6];
         }
@@ -566,77 +572,42 @@ else if (_fightShow == 6)
         _fightShow = 3;
         StateHasChanged();
     }
-    private void ReturnBeforePage()
-    {
-        _fightShow--;
-    }
-
-
-
-    //method
+    /// <summary>
+    /// 页面点击转换触发事件
+    /// </summary>
+    /// <param name="name"></param>
     private async void OnSelectedTabChanged(string name)
     {
         _selectedTab = name;
         switch (name)
         {
+            //施法分析
             case "castAnalysis":
                 //wait for get info and spin
                 _analysisShow = 0;
                 //
                 StateHasChanged();
                 var curFight = _reports.Find(p => p.Id == _curFightId);
-                _casts = await ReportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id, true);
+                _casts = await _reportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id, true);
                 _durationRole = (curFight.EndTimeUnix - curFight.StartTimeUnix) / 1000.0;
-                (_sameTalentCovenant, _castsModel, _durationModel) = await ReportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
+                (_sameTalentCovenant, _castsModel, _durationModel) = await _reportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
                 _indexCast = _casts.Keys.ToList().Union(_castsModel.Keys.ToList()).ToList();
                 _analysisShow = 1;
                 StateHasChanged();
                 break;
+            //爆发分析
             case "mainSkillTimeLine":
                 //wait for get info and spin
                 _analysisShow = 0;
                 //
                 StateHasChanged();
-                if (_curFriendly.Spec == "Restoration" || _curFriendly.Spec == "Mistweaver" || _curFriendly.Spec == "Holy" || _curFriendly.Spec == "Discipline")
+                if (_curFriendly.Spec is "Restoration" or "Mistweaver" or "Holy" or "Discipline")
                 {
-                    _heal = await ReportService.GetHeal(_reports, InputReportId, _curFightId, _curFriendly);
-
-                    foreach (var heal in _heal)
-                    {
-                        if (_healSum.ContainsKey(heal.Name))
-                        {
-                            _healSum[heal.Name].Amount += heal.Amount;
-                            _healSum[heal.Name].OverHeal += heal.OverHeal;
-                        }
-                        else
-                        {
-                            _healSum.Add(heal.Name, new HealClass(heal.Amount, heal.OverHeal));
-                        }
-                    }
-                    var curFight2 = _reports.Find(p => p.Id == _curFightId);
-                    (_sameTalentCovenant, _healModel) = await ReportService.GetHealModel(curFight2.Boss, _curFriendly);
-
 
                     _analysisShow = 1;
                 }
                 else
                 {
-                    _damage = await ReportService.GetDamageDone(_reports, InputReportId, _curFightId, _curFriendly);
-                    foreach (var damage in _damage)
-                    {
-                        if (_damageSum.ContainsKey(damage.Name))
-                        {
-                            _damageSum[damage.Name].Amount += damage.Amount;
-                        }
-                        else
-                        {
-                            _damageSum.Add(damage.Name, new DamageClass(damage.Amount));
-                        }
-                    }
-                    var curFight2 = _reports.Find(p => p.Id == _curFightId);
-                    (_sameTalentCovenant, _damageModel) = await ReportService.GetDamageModel(curFight2.Boss, _curFriendly);
-
-
 
                     _analysisShow = 2;
                 }
@@ -645,7 +616,23 @@ else if (_fightShow == 6)
                 break;
         }
     }
-    private DateTime UnixToDateTime(long unixTimeStamp)
+
+
+    #region 通用method
+
+    /// <summary>
+    /// 返回前一页
+    /// </summary>
+    private void ReturnBeforePage()
+    {
+        _fightShow--;
+    }
+    /// <summary>
+    /// unix时间戳转换
+    /// </summary>
+    /// <param name="unixTimeStamp"></param>
+    /// <returns></returns>
+    private static DateTime UnixToDateTime(long unixTimeStamp)
     {
 #pragma warning disable 618
         var startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1)); // 当地时区
@@ -653,6 +640,9 @@ else if (_fightShow == 6)
         var dt = startTime.AddMilliseconds(unixTimeStamp);
         return dt;
     }
+    /// <summary>
+    /// cssStyle初始化
+    /// </summary>
     private void InitialCssStyle()
     {
         _cssTypeStyle.Add("Shaman", "color: #2459FF");
@@ -669,28 +659,6 @@ else if (_fightShow == 6)
         _cssTypeStyle.Add("Hunter", "color: #8EB667");
     }
 
-    public class HealClass
-    {
-        public int Amount;
-        public int OverHeal;
-
-        public HealClass(int amount, int overHeal)
-        {
-            Amount = amount;
-            OverHeal = overHeal;
-        }
-    }
-
-    public class DamageClass
-    {
-        public int Amount;
-
-        public DamageClass(int amount)
-        {
-            Amount = amount;
-        }
-    }
-
-
+    #endregion
 
 }

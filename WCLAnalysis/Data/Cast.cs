@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
 
 namespace WCLAnalysis.Data
 {
@@ -16,9 +11,10 @@ namespace WCLAnalysis.Data
         public Cast(string json)
         {
             var jsonObject = JsonConvert.DeserializeObject<dynamic>(json);
+            if (jsonObject == null) return;
             SourceId = jsonObject["sourceID"];
             Name = jsonObject["ability"]["name"];
-            SourceIsFriendly =jsonObject["sourceIsFriendly"];
+            SourceIsFriendly = jsonObject["sourceIsFriendly"];
             TimeUnix = jsonObject["timestamp"];
         }
 

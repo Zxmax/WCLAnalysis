@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace WCLAnalysis.Data
 {
@@ -25,6 +21,7 @@ namespace WCLAnalysis.Data
             try
             {
                 var jsonObject = JsonConvert.DeserializeObject<dynamic>(json);
+                if (jsonObject == null) return;
                 SourceId = jsonObject["sourceID"];
                 TargetId = jsonObject["targetID"];
                 Name = jsonObject["ability"]["name"];
