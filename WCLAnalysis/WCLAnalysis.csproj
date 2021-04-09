@@ -9,6 +9,8 @@
     <PackageReference Include="Blazorise.Bootstrap" Version="0.9.3.2" />
     <PackageReference Include="Blazorise.Icons.FontAwesome" Version="0.9.3.2" />
     <PackageReference Include="BlazorTable" Version="1.15.0" />
+    <PackageReference Include="BlazorTimeline" Version="1.2.0" />
+    <PackageReference Include="GraphQL.Client" Version="3.2.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.4" />
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="5.0.4" />
     <PackageReference Include="MongoDB.Driver" Version="2.12.1" />

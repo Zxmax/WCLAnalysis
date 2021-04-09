@@ -12,12 +12,14 @@ namespace WCLAnalysis.Data
         public string Name { get; set; }
         public int SourceId { get; set; }
         public bool SourceIsFriendly { get; set; }
+        public long TimeUnix { get; set; }
         public Cast(string json)
         {
             var jsonObject = JsonConvert.DeserializeObject<dynamic>(json);
             SourceId = jsonObject["sourceID"];
             Name = jsonObject["ability"]["name"];
             SourceIsFriendly =jsonObject["sourceIsFriendly"];
+            TimeUnix = jsonObject["timestamp"];
         }
 
     }

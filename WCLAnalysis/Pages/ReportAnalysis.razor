@@ -7,61 +7,61 @@
 
 @if (_fightShow == 0)//首页输入战斗编号
 {
-<div class="center-in-center form-inline">
-    <TextEdit @bind-Text="@InputReportId" Size="Size.Large" Placeholder="请输入日志的战斗编号"></TextEdit>
-    <p>&nbsp;</p>
-    <Button Outline="true" Size="Size.Large" Color="Color.Primary" @onclick="SearchReports"><b>Analysis ></b></Button>
-</div>
+    <div class="center-in-center form-inline">
+        <TextEdit @bind-Text="@InputReportId" Size="Size.Large" Placeholder="请输入日志的战斗编号"></TextEdit>
+        <p>&nbsp;</p>
+        <Button Outline="true" Size="Size.Large" Color="Color.Primary" @onclick="SearchReports"><b>Analysis ></b></Button>
+    </div>
 
 }
 else if (_fightShow == 1)//选择
 {
-<Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
-<Divider />
-<h4 style="margin-top: 2%">战斗列表</h4>
-<div class="box">
-    @for (var i = 0; i <= _reports.Count / 5; i++)
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <h4 style="margin-top: 2%">战斗列表</h4>
+    <div class="box">
+        @for (var i = 0; i <= _reports.Count / 5; i++)
         {
             var tempReport = _reports.Count >= i * 5 + 5 ? _reports.GetRange(i * 5, 5) : _reports.GetRange(i * 5, _reports.Count - i * 5);
-    @foreach (var report in tempReport)
+            @foreach (var report in tempReport)
             {
                 if (report.Kill)
                 {
-    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Success" WhiteText="true">
-        <CardBody>
-            <CardTitle Size="5">@report.Name</CardTitle>
-            <CardText>
-                开始时间: @report.StartTime
-            </CardText>
-            <CardText>
-                结束时间 @report.EndTime
-            </CardText>
-            <CardText>
-                是否击杀 @report.Kill
-            </CardText>
-            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
-        </CardBody>
-    </Card>
+                    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Success" WhiteText="true">
+                        <CardBody>
+                            <CardTitle Size="5">@report.Name</CardTitle>
+                            <CardText>
+                                开始时间: @report.StartTime
+                            </CardText>
+                            <CardText>
+                                结束时间 @report.EndTime
+                            </CardText>
+                            <CardText>
+                                是否击杀 @report.Kill
+                            </CardText>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)"><b>战斗技能分配 ></b></Button>
+                        </CardBody>
+                    </Card>
                 }
                 else
                 {
                     var bossPercent = 100 - report.BossPercentage / 100;
-                    var actualPercent = Math.Round(100 - report.BossPercentage / 100.00, 2);
                     var style = "";
-    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Info" WhiteText="true">
-        <CardBody>
-            <CardTitle Size="5">@report.Name</CardTitle>
-            <CardText>
-                开始时间: @report.StartTime
-            </CardText>
-            <CardText>
-                结束时间 @report.EndTime
-            </CardText>
-            <CardText>
-                是否击杀 @report.Kill
-            </CardText>
-            <Progress style="background-color:#303030">
-                @{
+                    <Card class="child" Margin="Margin.Is4.FromBottom" Background="Background.Info" WhiteText="true">
+                        <CardBody>
+                            <CardTitle Size="5">@report.Name</CardTitle>
+                            <CardText>
+                                开始时间: @report.StartTime
+                            </CardText>
+                            <CardText>
+                                结束时间 @report.EndTime
+                            </CardText>
+                            <CardText>
+                                是否击杀 @report.Kill
+                            </CardText>
+                            <Progress style="background-color:#303030">
+                                @{
                                     style = bossPercent switch
                                     {
                                         > 90 => "background-color:darkorange",
@@ -71,214 +71,280 @@ else if (_fightShow == 1)//选择
                                         > 0 => "background-color: white",
                                         _ => style
                                     };
-                }
-                <ProgressBar size="" Style=@style Value=@bossPercent></ProgressBar>
-            </Progress>
-            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
-        </CardBody>
-    </Card>
+                                }
+                                <ProgressBar size="" Style=@style Value=@bossPercent></ProgressBar>
+                            </Progress>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)"><b>战斗技能分配 ></b></Button>
+                        </CardBody>
+                    </Card>
                 }
             }
         }
-</div>
+    </div>
 }
 else if (_fightShow == 2)
 {
-<Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
-<Divider />
-<h4 style="margin-top: 2%">角色列表</h4>
-<div class="box">
-    @for (var i = 0; i <= _friendlies.Count / 5; i++)
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <h4 style="margin-top: 2%">角色列表</h4>
+    <div class="box">
+        @for (var i = 0; i <= _friendlies.Count / 5; i++)
         {
             var tempReport = _friendlies.Count >= i * 5 + 5 ? _friendlies.GetRange(i * 5, 5) : _friendlies.GetRange(i * 5, _friendlies.Count - i * 5);
-    @foreach (var friendly in tempReport)
+            @foreach (var friendly in tempReport)
             {
-    <Card class="child" Margin="Margin.Is4.FromBottom" Style="background-color: #1D1C1B" WhiteText="true">
-        <CardBody>
-            <CardTitle Size="5" Style=@_cssTypeStyle[friendly.Type]>@friendly.Name</CardTitle>
-            <CardText Style="color:whitesmoke">
-                装等: @friendly.ItemLevel
-            </CardText>
-            <Button Size="Size.Small" Style="color:whitesmoke" @onclick="() => AnalysisFriendly(friendly.Id)">角色详情 ></Button>
-        </CardBody>
-    </Card>
+                <Card class="child" Margin="Margin.Is4.FromBottom" Style="background-color: #1D1C1B" WhiteText="true">
+                    <CardBody>
+                        <CardTitle Size="5" Style=@_cssTypeStyle[friendly.Type]>@friendly.Name</CardTitle>
+                        <CardText Style="color:whitesmoke">
+                            装等: @friendly.ItemLevel
+                        </CardText>
+                        <Button Size="Size.Small" Style="color:whitesmoke" @onclick="() => AnalysisFriendly(friendly.Id)">角色详情 ></Button>
+                    </CardBody>
+                </Card>
             }
         }
-</div>
+    </div>
 }
 else if (_fightShow == 3)
 {
-<Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
-<Divider />
-<Tabs Style="margin-top: 2%" SelectedTab="@_selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
-    <Items>
-        <Tab Name="basic">基础信息</Tab>
-        <Tab Name="castAnalysis" Disabled=@isShowCastAnalysis>技能数占比分析</Tab>
-        <Tab Name="mainSkillTimeLine">爆发技能轴分析</Tab>
-    </Items>
-    <Content>
-        <TabPanel Name="basic">
-            <div class="center-in-center form-inline">
-                <ul>
-                    <li class="characterInfo"><b>角色名：</b>@_curFriendly.Name</li>
-                    <li class="characterInfo"><b>装等：</b>@_curFriendly.ItemLevel</li>
-                    <li class="characterInfo"><b>天赋：</b>@_curFriendly.TalentNumber</li>
-                    <li class="characterInfo"><b>职业：</b>@_curFriendly.Type</li>
-                    <li class="characterInfo"><b>专精：</b>@_curFriendly.Spec</li>
-                    <li class="characterInfo"><b>盟约：</b>@_curFriendly.Covenant</li>
-                </ul>
-            </div>
-        </TabPanel>
-        <TabPanel Name="castAnalysis">
-            @if (_analysisShow == 0)
+    <Button style="margin-top: 2%" Outline="true" Size="Size.Large" Color="Color.Success" @onclick="ReturnBeforePage">返回</Button>
+    <Divider />
+    <Tabs Style="margin-top: 2%" SelectedTab="@_selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+        <Items>
+            <Tab Name="basic">基础信息</Tab>
+            <Tab Name="castAnalysis" Disabled=@isShowCastAnalysis>技能数占比分析</Tab>
+            <Tab Name="mainSkillTimeLine">爆发技能轴分析</Tab>
+            <Tab Name="eruptTimeLine">爆发时间</Tab>
+        </Items>
+        <Content>
+            <TabPanel Name="basic">
+                <div class="center-in-center form-inline">
+                    <ul>
+                        <li class="characterInfo"><b>角色名：</b>@_curFriendly.Name</li>
+                        <li class="characterInfo"><b>装等：</b>@_curFriendly.ItemLevel</li>
+                        <li class="characterInfo"><b>天赋：</b>@_curFriendly.TalentNumber</li>
+                        <li class="characterInfo"><b>职业：</b>@_curFriendly.Type</li>
+                        <li class="characterInfo"><b>专精：</b>@_curFriendly.Spec</li>
+                        <li class="characterInfo"><b>盟约：</b>@_curFriendly.Covenant</li>
+                    </ul>
+                </div>
+            </TabPanel>
+            <TabPanel Name="castAnalysis">
+                @if (_analysisShow == 0)
                 {
-            <div class="spinner"></div>
+                    <div class="spinner"></div>
                 }
-            @if (_analysisShow == 1)
+                @if (_analysisShow == 1)
                 {
-            <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
-            <Table style="margin-top: 2%">
-                <TableHeader ThemeContrast="ThemeContrast.Dark">
-                    <TableRow>
-                        <TableHeaderCell>技能名称</TableHeaderCell>
-                        <TableHeaderCell>你的释放数量</TableHeaderCell>
-                        <TableHeaderCell>模板选手的释放数量</TableHeaderCell>
-                        <TableHeaderCell>平均每分钟的释放数量</TableHeaderCell>
-                        <TableHeaderCell>模板选手平均每分钟的释放数量</TableHeaderCell>
-                        <TableHeaderCell>你该技能占总施法的占比</TableHeaderCell>
-                        <TableHeaderCell>模板选手的占比</TableHeaderCell>
-                        <TableHeaderCell>建议</TableHeaderCell>
-                    </TableRow>
-                </TableHeader>
-                @foreach (var p in _indexCast)
+                    <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
+                    <Table style="margin-top: 2%">
+                        <TableHeader ThemeContrast="ThemeContrast.Dark">
+                            <TableRow>
+                                <TableHeaderCell>技能名称</TableHeaderCell>
+                                <TableHeaderCell>你的释放数量</TableHeaderCell>
+                                <TableHeaderCell>模板选手的释放数量</TableHeaderCell>
+                                <TableHeaderCell>平均每分钟的释放数量</TableHeaderCell>
+                                <TableHeaderCell>模板选手平均每分钟的释放数量</TableHeaderCell>
+                                <TableHeaderCell>你该技能占总施法的占比</TableHeaderCell>
+                                <TableHeaderCell>模板选手的占比</TableHeaderCell>
+                                <TableHeaderCell>建议</TableHeaderCell>
+                            </TableRow>
+                        </TableHeader>
+                        @foreach (var p in _indexCast)
                         {
-                            var sumRole = _casts.Sum(p => p.Value);
-                            var sumModel = _castsModel.Sum(p => p.Value);
-                <TableRow>
-                    <TableRowCell>@p</TableRowCell>
+                            var sumRole = _casts.Sum(keyValuePair => keyValuePair.Value);
+                            var sumModel = _castsModel.Sum(keyValuePair => keyValuePair.Value);
+                            <TableRow>
+                                <TableRowCell>@p</TableRowCell>
 
-                    @if (_casts.ContainsKey(p) && _castsModel.ContainsKey(p))
-                        {
-                            var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
-                            var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
-                            var percentRole = Math.Round((double)_casts[p] / sumRole, 2);
-                            var percentModel = Math.Round((double)_castsModel[p] / sumModel, 2);
-                            var showTip = (percentModel - percentRole) switch
-                            {
-                                > 0.05 => "需要多用",
-                                > 0.02 => "可以多用",
-                                < -0.05 => "需要少用",
-                                < -0.02 => "可以少用",
-                                _ => ""
-                            };
-                    <TableRowCell>@_casts[p]</TableRowCell>
-                    <TableRowCell>@_castsModel[p]</TableRowCell>
-                    <TableRowCell>@avgRole</TableRowCell>
-                    <TableRowCell>@avgModel</TableRowCell>
-                    <TableRowCell>@percentRole</TableRowCell>
-                    <TableRowCell>@percentModel</TableRowCell>
-                            if (showTip == "")
-                            {
-                    <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "需要多用")
-                            {
-                    <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "需要少用")
-                            {
-                    <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "可以多用")
-                            {
-                    <TableRowCell Style="background-color: azure; color:lightblue">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "可以少用")
-                            {
-                    <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
-                            }
+                                @if (_casts.ContainsKey(p) && _castsModel.ContainsKey(p))
+                                {
+                                    var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
+                                    var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
+                                    var percentRole = Math.Round((double)_casts[p] / sumRole, 2);
+                                    var percentModel = Math.Round((double)_castsModel[p] / sumModel, 2);
+                                    var showTip = (percentModel - percentRole) switch
+                                    {
+                                        > 0.05 => "需要多用",
+                                        > 0.02 => "可以多用",
+                                        < -0.05 => "需要少用",
+                                        < -0.02 => "可以少用",
+                                        _ => ""
+                                    };
+                                    <TableRowCell>@_casts[p]</TableRowCell>
+                                    <TableRowCell>@_castsModel[p]</TableRowCell>
+                                    <TableRowCell>@avgRole</TableRowCell>
+                                    <TableRowCell>@avgModel</TableRowCell>
+                                    <TableRowCell>@percentRole</TableRowCell>
+                                    <TableRowCell>@percentModel</TableRowCell>
+                                    if (showTip == "")
+                                    {
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:lightblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
+                                    }
+                                }
+                                else if (!_casts.ContainsKey(p))
+                                {
+                                    var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
+                                    var percentModel = Math.Round((double)_castsModel[p] / sumModel, 2);
+                                    var showTip = (percentModel - 0) switch
+                                    {
+                                        > 0.05 => "需要多用",
+                                        > 0.02 => "可以多用",
+                                        _ => ""
+                                    };
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@_castsModel[p]</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@avgModel</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@percentModel</TableRowCell>
+                                    if (showTip == "")
+                                    {
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以多用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color:dodgerblue">@showTip</TableRowCell>
+                                    }
+                                }
+                                else
+                                {
+                                    var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
+                                    var percentRole = Math.Round((double)_casts[p] / sumRole, 2);
+                                    var showTip = (0 - percentRole) switch
+                                    {
+                                        > 0 => "",
+                                        < -0.05 => "需要少用",
+                                        < -0.02 => "可以少用",
+                                        _ => ""
+                                    };
+                                    <TableRowCell>@_casts[p]</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@avgRole</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    <TableRowCell>@percentRole</TableRowCell>
+                                    <TableRowCell>0</TableRowCell>
+                                    if (showTip == "")
+                                    {
+                                        <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "需要少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
+                                    }
+                                    else if (showTip == "可以少用")
+                                    {
+                                        <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
+                                    }
+                                }
+                            </TableRow>
                         }
-                        else if (!_casts.ContainsKey(p))
-                        {
-                            var avgModel = Math.Round(_castsModel[p] / _durationModel * 60, 2);
-                            var percentModel = Math.Round((double)_castsModel[p] / sumModel, 2);
-                            var showTip = (percentModel - 0) switch
-                            {
-                                > 0.05 => "需要多用",
-                                > 0.02 => "可以多用",
-                                _ => ""
-                            };
-                    <TableRowCell>0</TableRowCell>
-                    <TableRowCell>@_castsModel[p]</TableRowCell>
-                    <TableRowCell>0</TableRowCell>
-                    <TableRowCell>@avgModel</TableRowCell>
-                    <TableRowCell>0</TableRowCell>
-                    <TableRowCell>@percentModel</TableRowCell>
-                            if (showTip == "")
-                            {
-                    <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "需要多用")
-                            {
-                    <TableRowCell Style="background-color: azure; color:mediumblue">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "可以多用")
-                            {
-                    <TableRowCell Style="background-color: azure; color:dodgerblue">@showTip</TableRowCell>
-                            }
-                        }
-                        else
-                        {
-                            var avgRole = Math.Round(_casts[p] / _durationRole * 60, 2);
-                            var percentRole = Math.Round((double)_casts[p] / sumRole, 2);
-                            var showTip = (0 - percentRole) switch
-                            {
-                                > 0 => "",
-                                < -0.05 => "需要少用",
-                                < -0.02 => "可以少用",
-                                _ => ""
-                            };
-                    <TableRowCell>@_casts[p]</TableRowCell>
-                    <TableRowCell>0</TableRowCell>
-                    <TableRowCell>@avgRole</TableRowCell>
-                    <TableRowCell>0</TableRowCell>
-                    <TableRowCell>@percentRole</TableRowCell>
-                    <TableRowCell>0</TableRowCell>
-                            if (showTip == "")
-                            {
-                    <TableRowCell Style="background-color: azure;color: black">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "需要少用")
-                            {
-                    <TableRowCell Style="background-color: azure; color: red">@showTip</TableRowCell>
-                            }
-                            else if (showTip == "可以少用")
-                            {
-                    <TableRowCell Style="background-color: azure; color: lightcoral">@showTip</TableRowCell>
-                            }
-                        }
-                </TableRow>
-                        }
-            </Table>
-
-                }
-        </TabPanel>
-        <TabPanel Name="mainSkillTimeLine">
-            @if (_analysisShow == 0)
-                {
-            <div class="spinner"></div>
-                }
-            @if (_analysisShow == 1)
-                {
+                    </Table>
 
                 }
-        </TabPanel>
-    </Content>
-</Tabs>
+            </TabPanel>
+            <TabPanel Name="mainSkillTimeLine">
+                @if (_analysisShow == 0)
+                {
+                    <div class="spinner"></div>
+                }
+                @if (_analysisShow == 1)
+                {
+                    <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
+
+                }
+                @if (_analysisShow == 2)
+                {
+                    <li style="margin-top: 2%" class="characterInfo">当前在wcl前100中找到 @_sameTalentCovenant 个人与角色天赋盟约相同</li>
+
+                }
+            </TabPanel>
+            <TabPanel Name="eruptTimeLine">
+                @if (_analysisShow == 0)
+                {
+                    <div class="spinner"></div>
+                }
+                @if (_analysisShow == 1)
+                {
+
+                }
+                @if (_analysisShow == 2)
+                {
+
+                }
+            </TabPanel>
+        </Content>
+    </Tabs>
 }
 else if (_fightShow == 4)
 {
-<div class="spinner"></div>
+    <div class="spinner"></div>
+}
+else if (_fightShow == 5)
+{
+    <Progress style="margin-top: 2%">
+        <ProgressBar Value=@process />
+    </Progress>
+    <p>@process</p>
+}
+else if (_fightShow == 6)
+{
+    <Table style="margin-top: 2%">
+        <TableHeader ThemeContrast="ThemeContrast.Dark">
+            <TableRow>
+                <TableHeaderCell>施法者</TableHeaderCell>
+                <TableHeaderCell>爆发种类</TableHeaderCell>
+                <TableHeaderCell>爆发名称</TableHeaderCell>
+                <TableHeaderCell>时间</TableHeaderCell>
+            </TableRow>
+        </TableHeader>
+        @foreach (var p in _eruptList)
+        {
+            <TableRow>
+                <TableRowCell>@p.SourceId</TableRowCell>
+                @if (p.Type == 1)
+                {
+                    <TableRowCell>输出技能</TableRowCell>
+                }
+                else if (p.Type == 2)
+                {
+                    <TableRowCell>治疗技能</TableRowCell>
+                }
+                else if (p.Type == 3)
+                {
+                    <TableRowCell>自保技能</TableRowCell>
+                }
+                else if (p.Type == 4)
+                {
+                    <TableRowCell>功能技能</TableRowCell>
+                }
+                <TableRowCell>@p.Name</TableRowCell>
+                <TableRowCell>@p.Time</TableRowCell>
+            </TableRow>
+        }
+    </Table>
 }
 
 @code {
@@ -297,6 +363,22 @@ else if (_fightShow == 4)
     double _durationModel;
     Dictionary<string, int> _casts = new();
     Dictionary<string, int> _castsModel = new();
+    List<Cast> _castList = new();
+    List<Cast> _castListTemp = new();
+    List<DamageDone> _damage = new();
+    List<Heal> _heal = new();
+    List<DamageDone> _damageModel = new();
+    List<Heal> _healModel = new();
+    List<DamageDone> _damageEruptModel = new();
+    List<Heal> _healEruptModel = new();
+    Dictionary<string, DamageClass> _damageSum = new();
+    Dictionary<string, HealClass> _healSum = new();
+    Dictionary<string, DamageClass> _damageSumModel = new();
+    Dictionary<string, HealClass> _healSumModel = new();
+    List<EruptTimeLine> _dicErupt = new();
+    List<EruptTimeLine> _eruptList = new();
+    int process = 0;
+
 
 
     //页面转换
@@ -329,7 +411,7 @@ else if (_fightShow == 4)
         var parsedObject = JObject.Parse(reportJson);
         var parsedJson = parsedObject["fights"]?.ToString();
         _reports = JsonConvert.DeserializeObject<List<Report>>(parsedJson ?? string.Empty);
-        _reports = _reports.Where(p => p.Boss != 0).ToList();
+        _reports = (_reports ?? throw new InvalidOperationException()).Where(p => p.Boss != 0).ToList();
         foreach (var report in _reports)
         {
             // ReSharper disable once PossibleNullReferenceException
@@ -427,7 +509,42 @@ else if (_fightShow == 4)
         _fightShow = 2;
         StateHasChanged();
     }
+    private async void AnalysisReportsErupt(int fightId)
+    {
+        //wait for get info from wcl and spin
+        process = 0;
+        _fightShow = 5;
+        _curFightId = fightId;
+        //
+        StateHasChanged();
+        await Task.Delay(1);
+        string reportJson;
+        if (ReportJsonDic.ContainsKey(InputReportId))
+            reportJson = ReportJsonDic[InputReportId];
+        else
+        {
+            reportJson = await ReportService.GetReportJsonStringByReportIdAsync(InputReportId);
+            ReportJsonDic.Add(InputReportId, reportJson);
+        }
+        //deserialize to your class
+        var parsedObject = JObject.Parse(reportJson);
+        var friendlies = parsedObject["friendlies"]!.Select(friendly => new Friendly(friendly.ToString())).ToList();
+        friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
+        _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
+        foreach (var friendly in _friendlies)
+        {
+            _castListTemp = await ReportService.GetCastList(_reports, InputReportId, _curFightId, friendly);
+            _dicErupt = await ReportService.GetErupt(_castListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix);
+            _eruptList.AddRange(_dicErupt);
+            process += 5;
+            StateHasChanged();
+        }
+        _eruptList = _eruptList.OrderBy(p => p.Time).ToList();
 
+        //turn to fight page
+        _fightShow = 6;
+        StateHasChanged();
+    }
     private async void AnalysisFriendly(int characterId)
     {
         //wait for get info from wcl and spin
@@ -468,7 +585,7 @@ else if (_fightShow == 4)
                 //
                 StateHasChanged();
                 var curFight = _reports.Find(p => p.Id == _curFightId);
-                _casts = await ReportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id,true);
+                _casts = await ReportService.GetCastAsync(curFight, InputReportId, _curFriendly.Id, true);
                 _durationRole = (curFight.EndTimeUnix - curFight.StartTimeUnix) / 1000.0;
                 (_sameTalentCovenant, _castsModel, _durationModel) = await ReportService.GetSameTalentCovenant(curFight.Boss, _curFriendly);
                 _indexCast = _casts.Keys.ToList().Union(_castsModel.Keys.ToList()).ToList();
@@ -480,13 +597,50 @@ else if (_fightShow == 4)
                 _analysisShow = 0;
                 //
                 StateHasChanged();
+                if (_curFriendly.Spec == "Restoration" || _curFriendly.Spec == "Mistweaver" || _curFriendly.Spec == "Holy" || _curFriendly.Spec == "Discipline")
+                {
+                    _heal = await ReportService.GetHeal(_reports, InputReportId, _curFightId, _curFriendly);
+
+                    foreach (var heal in _heal)
+                    {
+                        if (_healSum.ContainsKey(heal.Name))
+                        {
+                            _healSum[heal.Name].Amount += heal.Amount;
+                            _healSum[heal.Name].OverHeal += heal.OverHeal;
+                        }
+                        else
+                        {
+                            _healSum.Add(heal.Name, new HealClass(heal.Amount, heal.OverHeal));
+                        }
+                    }
+                    var curFight2 = _reports.Find(p => p.Id == _curFightId);
+                    (_sameTalentCovenant, _healModel) = await ReportService.GetHealModel(curFight2.Boss, _curFriendly);
+
+
+                    _analysisShow = 1;
+                }
+                else
+                {
+                    _damage = await ReportService.GetDamageDone(_reports, InputReportId, _curFightId, _curFriendly);
+                    foreach (var damage in _damage)
+                    {
+                        if (_damageSum.ContainsKey(damage.Name))
+                        {
+                            _damageSum[damage.Name].Amount += damage.Amount;
+                        }
+                        else
+                        {
+                            _damageSum.Add(damage.Name, new DamageClass(damage.Amount));
+                        }
+                    }
+                    var curFight2 = _reports.Find(p => p.Id == _curFightId);
+                    (_sameTalentCovenant, _damageModel) = await ReportService.GetDamageModel(curFight2.Boss, _curFriendly);
 
 
 
+                    _analysisShow = 2;
+                }
 
-
-
-                _analysisShow = 1;
                 StateHasChanged();
                 break;
         }
@@ -514,4 +668,29 @@ else if (_fightShow == 4)
         _cssTypeStyle.Add("Rogue", "color: #E5DF65");
         _cssTypeStyle.Add("Hunter", "color: #8EB667");
     }
+
+    public class HealClass
+    {
+        public int Amount;
+        public int OverHeal;
+
+        public HealClass(int amount, int overHeal)
+        {
+            Amount = amount;
+            OverHeal = overHeal;
+        }
+    }
+
+    public class DamageClass
+    {
+        public int Amount;
+
+        public DamageClass(int amount)
+        {
+            Amount = amount;
+        }
+    }
+
+
+
 }
