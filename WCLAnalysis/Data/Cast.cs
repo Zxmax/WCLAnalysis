@@ -12,6 +12,7 @@ namespace WCLAnalysis.Data
         {
             var jsonObject = JsonConvert.DeserializeObject<dynamic>(json);
             if (jsonObject == null) return;
+            if(jsonObject["type"]!= "cast") return;
             SourceId = jsonObject["sourceID"];
             Name = jsonObject["ability"]["name"];
             SourceIsFriendly = jsonObject["sourceIsFriendly"];

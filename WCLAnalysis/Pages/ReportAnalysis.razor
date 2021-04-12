@@ -40,7 +40,7 @@ else if (_fightShow == 1)//选择
                                 是否击杀 @report.Kill
                             </CardText>
                             <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReports(report.Id)"><b>战斗详情 ></b></Button>
-                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)"><b>战斗技能分配 ></b></Button>
+                            <Button Outline="true" Size="Size.Small" Color="Color.Link" @onclick="() => OnEruptPageChanged(report.Id)"><b>战斗技能分配 ></b></Button>
                         </CardBody>
                     </Card>
                 }
@@ -75,7 +75,7 @@ else if (_fightShow == 1)//选择
                                 <ProgressBar size="" Style=@style Value=@bossPercent></ProgressBar>
                             </Progress>
                             <Button Color="Color.Link" @onclick="() => AnalysisReports(report.Id)" Outline="true" Size="Size.Small"><b>战斗详情 ></b></Button>
-                            <Button Color="Color.Link" @onclick="() => AnalysisReportsErupt(report.Id)" Outline="true" Size="Size.Small"><b>战斗技能分配 ></b></Button>
+                            <Button Color="Color.Link" @onclick="() => OnEruptPageChanged(report.Id)" Outline="true" Size="Size.Small"><b>战斗技能分配 ></b></Button>
                         </CardBody>
                     </Card>
                 }
@@ -289,47 +289,75 @@ else if (_fightShow == 4)
 }
 else if (_fightShow == 5)
 {
+    <p>正在分析友方数据...</p>
+    <br>
     <Progress style="margin-top: 2%">
-        <ProgressBar Value=@_process />
+        <ProgressBar Value=@_friendProcess />
     </Progress>
-    <p>@_process</p>
+    <br>
+    <p>正在分析敌方数据...</p>
+    <br>
+    <Progress style="margin-top: 2%">
+        <ProgressBar Value=@_enemyProcess />
+    </Progress>
 }
 else if (_fightShow == 6)
 {
-    <Table style="margin-top: 2%">
-        <TableHeader ThemeContrast="ThemeContrast.Dark">
-            <TableRow>
-                <TableHeaderCell>施法者</TableHeaderCell>
-                <TableHeaderCell>爆发种类</TableHeaderCell>
-                <TableHeaderCell>爆发名称</TableHeaderCell>
-                <TableHeaderCell>时间</TableHeaderCell>
-            </TableRow>
-        </TableHeader>
-        @foreach (var p in _eruptList)
-        {
-            <TableRow>
-                <TableRowCell>@p.SourceId</TableRowCell>
-                @if (p.Type == 1)
-                {
-                    <TableRowCell>输出技能</TableRowCell>
-                }
-                else if (p.Type == 2)
-                {
-                    <TableRowCell>治疗技能</TableRowCell>
-                }
-                else if (p.Type == 3)
-                {
-                    <TableRowCell>自保技能</TableRowCell>
-                }
-                else if (p.Type == 4)
-                {
-                    <TableRowCell>功能技能</TableRowCell>
-                }
-                <TableRowCell>@p.Name</TableRowCell>
-                <TableRowCell>@p.Time</TableRowCell>
-            </TableRow>
-        }
-    </Table>
+    @if (_analysisShow == 0)
+    {
+        <div class="center-in-center form-inline">
+            <Validation UsePattern="true">
+                <TextEdit @bind-Text="@InputCd" Pattern="[1-9]" Size="Size.Large" Placeholder="输入统计最短的冷却时间">
+                    <Feedback>
+                        <ValidationError>请输入数字</ValidationError>
+                    </Feedback>
+                </TextEdit>
+            </Validation>
+            <p>&nbsp;</p>
+            <Button Outline="true" Size="Size.Large" Color="Color.Primary" @onclick="() => AnalysisReportsErupt(_curFightId, InputCd)"><b>Analysis ></b></Button>
+        </div>
+    }
+    @if (_analysisShow == 1)
+    {
+        <Table style="margin-top: 2%">
+            <TableHeader ThemeContrast="ThemeContrast.Dark">
+                <TableRow>
+                    <TableHeaderCell>施法者</TableHeaderCell>
+                    <TableHeaderCell>爆发种类</TableHeaderCell>
+                    <TableHeaderCell>爆发名称</TableHeaderCell>
+                    <TableHeaderCell>时间</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            @foreach (var p in _eruptList)
+            {
+                <TableRow>
+                    <TableRowCell>@p.SourceId</TableRowCell>
+                    @if (p.Type == 1)
+                    {
+                        <TableRowCell>输出技能</TableRowCell>
+                    }
+                    else if (p.Type == 2)
+                    {
+                        <TableRowCell>治疗技能</TableRowCell>
+                    }
+                    else if (p.Type == 3)
+                    {
+                        <TableRowCell>自保技能</TableRowCell>
+                    }
+                    else if (p.Type == 4)
+                    {
+                        <TableRowCell>功能技能</TableRowCell>
+                    }
+                    else if (p.Type == 5)
+                    {
+                        <TableRowCell>Boss技能</TableRowCell>
+                    }
+                    <TableRowCell>@p.Name</TableRowCell>
+                    <TableRowCell>@p.Time</TableRowCell>
+                </TableRow>
+            }
+        </Table>
+    }
 }
 
 @code {
@@ -338,10 +366,12 @@ else if (_fightShow == 6)
 
     //通用
     public string InputReportId { get; set; }//报告ID
+    public string InputCd { get; set; }//冷却时间
     public Dictionary<string, string> ReportJsonDic = new();//报告ID对应的json字符串
     public Dictionary<string, Dictionary<int, string>> CharacterFightDic = new();//分别表示 战斗日志编码  某场战斗id  该战斗的json字符
     List<Report> _reports = new();//当前报告ID下的所有战斗
     List<Friendly> _friendlies = new();//当前战斗中参与的友方玩家
+    List<Enemy> _enemies = new();//当前战斗中参与的敌对npc
     Friendly _curFriendly;//当前选中的玩家
     int _curFightId;//当前战斗ID
 
@@ -354,16 +384,20 @@ else if (_fightShow == 6)
     Dictionary<string, int> _castsModel = new();//当前玩家当前战斗的模板玩家的施法数量字典
 
     //团队爆发技能分析
-    List<Cast> _eruptListTemp = new();//当前玩家的爆发技能列表
+    List<Cast> _castListTemp = new();//当前玩家的爆发技能列表
     List<EruptTimeLine> _dicErupt = new();
     List<EruptTimeLine> _eruptList = new();
 
     //爆发技能抽分析
+    List<Cast> _castList = new();
+    List<Cast> _castListModel = new();
+
 
     //页面转换以及进度条等数据绑定
     private int _fightShow;//不同功能页面之间的切换
     private int _analysisShow;//分析某个角色的不同功能之间的切换
-    int _process;//分析进度条绑定值
+    int _friendProcess;//分析友方进度条绑定值
+    int _enemyProcess;//分析友方进度条绑定值
     readonly Dictionary<string, string> _cssTypeStyle = new();//cssSty
     string _selectedTab = "basic";//绑定某角色下所选的是什么功能
     private const bool IsShowCastAnalysis = false;//是否显示技能占比
@@ -507,14 +541,17 @@ else if (_fightShow == 6)
         _fightShow = 2;
         StateHasChanged();
     }
+
     /// <summary>
     /// 分析当前战斗的团队技能分配情况
     /// </summary>
     /// <param name="fightId"></param>
-    private async void AnalysisReportsErupt(int fightId)
+    /// <param name="eruptCd"></param>
+    private async void AnalysisReportsErupt(int fightId, string eruptCd)
     {
         //wait for get info from wcl and spin
-        _process = 0;
+        _friendProcess = 0;
+        _enemyProcess = 0;
         _fightShow = 5;
         _curFightId = fightId;
         //
@@ -533,18 +570,30 @@ else if (_fightShow == 6)
         var friendlies = parsedObject["friendlies"]!.Select(friendly => new Friendly(friendly.ToString())).ToList();
         friendlies = friendlies.Where(p => p.Type != "NPC" && p.Type != "Boss").ToList();
         _friendlies = friendlies.FindAll(p => p.Fights.Contains(fightId));
+        var enemyList = parsedObject["enemies"]!.Select(enemy => new Enemy(enemy.ToString())).ToList();
+        _enemies = enemyList.FindAll(p => p.Fights.Contains(fightId));
+
         foreach (var friendly in _friendlies)
         {
-            _eruptListTemp = await _reportService.GetEruptList(_reports, InputReportId, _curFightId, friendly);
-            _dicErupt = await _reportService.GetErupt(_eruptListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix);
+            _castListTemp = await _reportService.GetCastList(_reports, InputReportId, _curFightId, friendly);
+            _dicErupt = await _reportService.GetErupt(_castListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix, Int32.Parse(eruptCd));
             _eruptList.AddRange(_dicErupt);
-            _process += 5;
+            _friendProcess += 5;
+            StateHasChanged();
+        }
+        foreach (var enemy in _enemies)
+        {
+            _castListTemp = await _reportService.GetEnemyCastList(_reports, InputReportId, _curFightId, enemy);
+            _dicErupt = await _reportService.GetEnemyErupt(_castListTemp, _reports.Find(p => p.Id == _curFightId).StartTimeUnix);
+            _eruptList.AddRange(_dicErupt);
+            _enemyProcess += 100 / _enemies.Count;
             StateHasChanged();
         }
         _eruptList = _eruptList.OrderBy(p => p.Time).ToList();
 
         //turn to fight page
         _fightShow = 6;
+        _analysisShow = 1;
         StateHasChanged();
     }
     /// <summary>
@@ -572,6 +621,15 @@ else if (_fightShow == 6)
         _fightShow = 3;
         StateHasChanged();
     }
+
+    private void OnEruptPageChanged(int fightId)
+    {
+        _fightShow = 6;
+        _analysisShow = 0;
+        _curFightId = fightId;
+        StateHasChanged();
+    }
+
     /// <summary>
     /// 页面点击转换触发事件
     /// </summary>
@@ -603,6 +661,7 @@ else if (_fightShow == 6)
                 StateHasChanged();
                 if (_curFriendly.Spec is "Restoration" or "Mistweaver" or "Holy" or "Discipline")
                 {
+                    _castList = await _reportService.GetCastList(_reports, InputReportId, _curFightId, _curFriendly);
 
                     _analysisShow = 1;
                 }

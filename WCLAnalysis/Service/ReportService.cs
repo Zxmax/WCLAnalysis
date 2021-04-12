@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -240,7 +241,7 @@ namespace WCLAnalysis.Service
         /// <param name="fightId"></param>
         /// <param name="friendly"></param>
         /// <returns></returns>
-        public async Task<List<Cast>> GetEruptList(List<Report> reports, string reportId, int fightId, Friendly friendly)
+        public async Task<List<Cast>> GetCastList(List<Report> reports, string reportId, int fightId, Friendly friendly)
         {
             var startTime = reports.Find(p => p.Id == fightId)?.StartTimeUnix;
             var endTime = reports.Find(p => p.Id == fightId)?.EndTimeUnix;
@@ -269,29 +270,66 @@ namespace WCLAnalysis.Service
             }
         }
         /// <summary>
+        /// 获取敌对npc施法
+        /// </summary>
+        /// <param name="reports"></param>
+        /// <param name="reportId"></param>
+        /// <param name="fightId"></param>
+        /// <param name="enemy"></param>
+        /// <returns></returns>
+        public async Task<List<Cast>> GetEnemyCastList(List<Report> reports, string reportId, int fightId, Enemy enemy)
+        {
+            var startTime = reports.Find(p => p.Id == fightId)?.StartTimeUnix;
+            var endTime = reports.Find(p => p.Id == fightId)?.EndTimeUnix;
+
+            var client = new HttpClient();
+            var getReportsUrl = Url + "report/events/casts/" + reportId;
+            client.BaseAddress = new Uri(getReportsUrl);
+
+            // Add an Accept header for JSON format.
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var urlParameters = UrlParameters +
+                                "&start=" + startTime + "&end=" + endTime + "&hostility=1&sourceid=" + enemy.Id;
+
+            // List data response.
+            var response = await client.GetAsync(urlParameters);
+            if (!response.IsSuccessStatusCode) return null;
+            {
+                var dataObjects =
+                    await response.Content
+                        .ReadAsStringAsync(); //Make sure to add a reference to System.Net.Http.Formatting.dll
+
+                var parsedObjectHeal = JObject.Parse(dataObjects);
+                return (parsedObjectHeal["events"] ?? throw new InvalidOperationException()).Select(cast => new Cast(cast.ToString())).ToList();
+            }
+        }
+        /// <summary>
         /// 获取爆发治疗列表
         /// </summary>
         /// <param name="allCastss"></param>
         /// <param name="startTimeUnix"></param>
+        /// <param name="eruptCd"></param>
         /// <returns></returns>
-        public async Task<List<EruptTimeLine>> GetErupt(List<Cast> allCastss, long startTimeUnix)
+        public async Task<List<EruptTimeLine>> GetErupt(List<Cast> allCasts, long startTimeUnix,int eruptCd)
         {
             var collection = _database.GetCollection<Erupt>("wow_erupt");
             var dicErupt = new List<EruptTimeLine>();
             string spec = null;
             var type = 0;
-            foreach (var filter1 in allCastss.TakeWhile(_ => spec == null).Select(cast => Builders<Erupt>.Filter.Eq("CNName", cast.Name)))
+            foreach (var filter1 in allCasts.TakeWhile(_ => spec == null).Select(cast => Builders<Erupt>.Filter.Eq("CNName", cast.Name)))
             {
                 var results = await collection.Find(filter1).ToListAsync();
-                if (results.Count <= 0 || results.Count > 1) continue;
+                if (results.Count is <= 0 or > 1) continue;
                 spec = results.Find(p => p.Spec != null)?.Spec;
             }
             if (spec == "discipline")
                 spec = "discipline";
-            foreach (var cast in allCastss)
+            foreach (var cast in allCasts)
             {
                 var filter1 = Builders<Erupt>.Filter.Eq("CNName", cast.Name);
-                var filter2 = Builders<Erupt>.Filter.Gt("CoolDown", 59);
+                var filter2 = Builders<Erupt>.Filter.Gt("CoolDown", eruptCd-1);
                 try
                 {
                     var results = await collection.Find(filter1 & filter2).ToListAsync();
@@ -300,8 +338,17 @@ namespace WCLAnalysis.Service
                         case <= 0:
                             continue;
                         case 1:
-                            type = spec is "restoration" or "mistweaver" or "holy" or "discipline" ? 2 : 1;
-                            break;
+                            if (results[0].Type is 3 or 4)
+                            {
+                                type = results[0].Type; 
+                                break;
+                            }
+                            else
+                            {
+                                type = spec is "restoration" or "mistweaver" or "holy" or "discipline" ? 2 : 1;
+                                break;
+
+                            }
                         case > 1:
                             var temp = results.Find(p => p.Spec == spec);
                             if (temp != null) type = temp.Type;
@@ -323,8 +370,40 @@ namespace WCLAnalysis.Service
             return dicErupt;
 
         }
+        /// <summary>
+        /// 获取敌对npc的关键技能
+        /// </summary>
+        /// <param name="allCasts"></param>
+        /// <param name="startTimeUnix"></param>
+        /// <returns></returns>
+        public async Task<List<EruptTimeLine>> GetEnemyErupt(List<Cast> allCasts, long startTimeUnix)
+        {
+            var collection = _database.GetCollection<EnemyErupt>("wow_castle-nathria");
+            var dicErupt = new List<EruptTimeLine>();
+            foreach (var cast in allCasts)
+            {
+                var filter = Builders<EnemyErupt>.Filter.Eq("CastName", cast.Name);
+                try
+                {
+                   
+                    var results = await collection.Find(filter).ToListAsync();
+                    if (results.Count > 0)
+                    {
+                        var values = dicErupt.FindAll(p => p.Name == cast.Name);
+                        if (values.Count > 0)
+                            if (values.Max(p => p.Time) > (cast.TimeUnix - startTimeUnix) / 1000.0 - 5)
+                                continue;
+                        dicErupt.Add(new EruptTimeLine(cast.Name, (cast.TimeUnix - startTimeUnix) / 1000.0, cast.SourceId));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+            return dicErupt;
 
-
+        }
 
         #region inner class
 
@@ -389,7 +468,16 @@ namespace WCLAnalysis.Service
             public string Spec { get; set; }
 
         }
+        [BsonIgnoreExtraElements]
+        public class EnemyErupt
+        {
+            public ObjectId Id { get; set; }
+            [BsonElement("Boss")]
+            public string Boss { get; set; }
+            [BsonElement("CastName")]
+            public string CastName { get; set; }
 
+        }
         #endregion
 
 

@@ -16,5 +16,14 @@
             Type = type;
             SourceId = sourceId;
         }
+
+        public EruptTimeLine(string name, double time,  int sourceId)
+        {
+            Name = name;
+            Time = time;
+            Type = 5;
+            SourceId = sourceId;
+        }
+        
     }
 }
